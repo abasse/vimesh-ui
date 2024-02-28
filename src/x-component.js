@@ -285,6 +285,26 @@ ${elScript.innerHTML}
                 }
             })
         }
+
+        function interpolateTemplate(template, args) {
+            const templ = Object.entries(args).reduce(
+                (result, [arg, val]) => result.replaceAll(`$\{${arg}}`, `${val}`), template);
+            const pattern = /\$\{[^}]+\}/g;
+            return templ.replace(pattern, '{}');
+        }
+
+        function extractAttributes(element) {
+            const attributes = element.attributes;
+            const result = {};
+            for (let i = 0; i < attributes.length; i++) {
+                const attribute = attributes[i];
+                if (attribute.name.startsWith('_')) {
+                    result[attribute.name] = attribute.value;
+                }
+            }
+            return result;
+        }
+
         $vui.components[compName] = class extends HTMLElement {
             connectedCallback() {
                 let elComp = this
@@ -315,6 +335,10 @@ ${elScript.innerHTML}
                             defaultSlotContent.push(elChild.cloneNode(true))
                         }
                     })
+
+                    // Interpolate template - replace ${_attributeName} with attribute value
+                    el.innerHTML = interpolateTemplate(el.innerHTML, extractAttributes(this));
+
                     if (unwrap) {
                         elComp = el.content.cloneNode(true).firstElementChild
                         copyAttributes(this, elComp)
